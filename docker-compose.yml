@@ -29,3 +29,6 @@ services:
     hostname: nginx
     ports:
       - "80:80"
+    depends_on:
+      - api
+      - client
