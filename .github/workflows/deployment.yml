@@ -1,62 +1,39 @@
-name: Publish Multiple Docker Images
+name: Deploy MultiDocker
 on:
   push:
     branches:
-      - main
-
+      - main # check your repo, your default branch might be master!
+ 
 jobs:
-  push_to_docker_hub:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
     steps:
-      - name: Check out the repository
-        uses: actions/checkout@v4
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
+      - uses: actions/checkout@v3
+      - run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - run: docker build -t tosini13/client -f ./client/Dockerfile.dev ./client
+      - run: docker run -e CI=true tosini13/client npm test
+ 
+      - run: docker build -t tosini13/client ./client
+      - run: docker build -t tosini13/nginx ./nginx
+      - run: docker build -t tosini13/server ./server
+      - run: docker build -t tosini13/worker ./worker
+ 
+      - run: docker push tosini13/client
+      - run: docker push tosini13/nginx
+      - run: docker push tosini13/server
+      - run: docker push tosini13/worker
+ 
+      - name: Generate deployment package
+        run: zip -r deploy.zip . -x '*.git*'
+ 
+      - name: Deploy to EB
+        uses: einaregilsson/beanstalk-deploy@v18
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
-        with:
-          images: tosini13/docker-course
-
-      - name: Build and push client Docker image
-        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
-        with:
-          context: ./client
-          push: true
-          tags: tosini13/client
-          labels: ${{ steps.meta.outputs.labels }}
-      
-      - name: Build and push server Docker image
-        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
-        with:
-          context: ./server
-          push: true
-          tags: tosini13/server
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Build and push worker Docker image
-        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
-        with:
-          context: ./worker
-          push: true
-          tags: tosini13/worker
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Build and push nginx Docker image
-        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
-        with:
-          context: ./nginx
-          push: true
-          tags: tosini13/nginx
-          labels: ${{ steps.meta.outputs.labels }}
-
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+          application_name: docker-course
+          environment_name: Docker-course-env
+          existing_bucket_name: elasticbeanstalk-us-east-1-951708948954
+          region: us-east-1
+          version_label: ${{ github.sha }}
+          deployment_package: deploy.zip
