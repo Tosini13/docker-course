@@ -1,69 +1,31 @@
-version: '3'
-
+version: "3"
 services:
-  postgres:
-    image: postgres:latest
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgres_password"
-      POSTGRES_DB: "postgres"
-      POSTGRES_PORT: 5432
-
-  redis:
-    image: redis:latest
-
-  api:
-    build:
-      context: ./server
-      dockerfile: Dockerfile.dev
-    volumes:
-      - /app/node_modules
-      - ./server:/app
-    depends_on:
-      - postgres
-      - redis
-    environment:
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgres_password"
-      POSTGRES_DB: "postgres"
-      POSTGRES_PORT: 5432
-      POSTGRES_HOST: postgres
-
-  worker:
-    build:
-      context: ./worker
-      dockerfile: Dockerfile.dev
-    depends_on:
-      - redis
-    environment:
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-
   client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile.dev
-    volumes:
-      - /app/node_modules
-      - ./client:/app
-    depends_on:
-      - api
+    image: "tosini13/client"
+    mem_limit: 128m
+    hostname: client
+  server:
+    image: "tosini13/server"
+    mem_limit: 128m
+    hostname: api
     environment:
-      - WDS_SOCKET_PORT=0
-
+      - REDIS_HOST=$REDIS_HOST
+      - REDIS_PORT=$REDIS_PORT
+      - PGUSER=$PGUSER
+      - PGHOST=$PGHOST
+      - PGDATABASE=$PGDATABASE
+      - PGPASSWORD=$PGPASSWORD
+      - PGPORT=$PGPORT
+  worker:
+    image: "tosini13/worker"
+    mem_limit: 128m
+    hostname: worker
+    environment:
+      - REDIS_HOST=$REDIS_HOST
+      - REDIS_PORT=$REDIS_PORT
   nginx:
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile.dev
-    restart: always
+    image: "tosini13/nginx"
+    mem_limit: 128m
+    hostname: nginx
     ports:
-      - "3050:80"
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - client
-      - api
+      - "80:80"
