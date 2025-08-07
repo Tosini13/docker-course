@@ -63,12 +63,38 @@ app.get("/values/all", async (req, res) => {
 app.get("/values/current", async (req, res) => {
   try {
     const values = await redisClient.hGetAll("values");
+    res.send(values);
   } catch (err) {
     console.error('Error getting values from Redis', err);
   }
-  res.send(values);
 });
  
+ 
+app.get("/values/current-api", async (req, res) => {
+  try {
+    const values = await redisClient.hGetAll("values");
+    res.send(values);
+  } catch (err) {
+    console.error('Error getting values from Redis', err);
+  }
+});
+
+
+app.post("/values-api", async (req, res) => {
+  const index = req.body.index;
+ 
+  if (parseInt(index) > 40) {
+    return res.status(422).send("Index too high");
+  }
+  try {
+    pgClient.query("INSERT INTO values(number) VALUES($1)", [index]);
+  } catch (err) {
+    console.error('Error inserting value into Postgres', err);
+  }
+ 
+  res.send({ working: true });
+});
+
 app.post("/values", async (req, res) => {
   const index = req.body.index;
  

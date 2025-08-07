@@ -29,6 +29,15 @@ const Fib = () => {
     });
     setIndex("");
   };
+
+  const handleSubmitWithoutCache = async (event) => {
+    event.preventDefault();
+ 
+    await axios.post("/api/values-api", {
+      index: index,
+    });
+    setIndex("");
+  };
  
   const renderSeenIndexes = () => {
     return seenIndexes.map(({ number }) => number).join(", ");
@@ -57,6 +66,15 @@ const Fib = () => {
           onChange={(event) => setIndex(event.target.value)}
         />
         <button>Submit</button>
+      </form>
+
+      <form onSubmit={handleSubmitWithoutCache}>
+        <label>Enter your index (without cache):</label>
+        <input
+          value={index}
+          onChange={(event) => setIndex(event.target.value)}
+        />
+        <button>Submit without cache</button>
       </form>
  
       <h3>Indexes I have seen:</h3>
