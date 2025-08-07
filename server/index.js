@@ -27,15 +27,22 @@ pgClient.on("connect", (client) => {
  
 // Redis Client Setup
 const redis = require("redis");
+
 const redisClient = redis.createClient({
   url: `redis://${keys.redisHost}:${keys.redisPort}`,
   retry_strategy: () => 1000,
+}).on('error', (err) => {
+  console.error('Error connecting to Redis!', err);
 });
 const redisPublisher = redisClient.duplicate();
  
 (async () => {
-  await redisClient.connect();
-  await redisPublisher.connect();
+  try {
+    await redisClient.connect();
+    await redisPublisher.connect();
+  } catch (err) {
+    console.error('Error connecting to Redis', err);
+  }
 })();
  
 // Express route handlers
@@ -45,13 +52,20 @@ app.get("/", (req, res) => {
 });
  
 app.get("/values/all", async (req, res) => {
-  const values = await pgClient.query("SELECT * from values");
- 
-  res.send(values.rows);
+  try {
+    const values = await pgClient.query("SELECT * from values");
+    res.send(values.rows);
+  } catch (err) {
+    console.error('Error getting values from Postgres', err);
+  }
 });
  
 app.get("/values/current", async (req, res) => {
-  const values = await redisClient.hGetAll("values");
+  try {
+    const values = await redisClient.hGetAll("values");
+  } catch (err) {
+    console.error('Error getting values from Redis', err);
+  }
   res.send(values);
 });
  
@@ -61,10 +75,13 @@ app.post("/values", async (req, res) => {
   if (parseInt(index) > 40) {
     return res.status(422).send("Index too high");
   }
- 
-  await redisClient.hSet("values", index, "Nothing yet!");
-  await redisPublisher.publish("insert", index);
-  pgClient.query("INSERT INTO values(number) VALUES($1)", [index]);
+  try {
+    await redisClient.hSet("values", index, "Nothing yet!");
+    await redisPublisher.publish("insert", index);
+    pgClient.query("INSERT INTO values(number) VALUES($1)", [index]);
+  } catch (err) {
+    console.error('Error inserting value into Redis or Postgres', err);
+  }
  
   res.send({ working: true });
 });
