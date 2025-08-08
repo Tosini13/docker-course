@@ -29,14 +29,18 @@ pgClient.on("connect", (client) => {
 const redis = require("redis");
 
 const redisClient = redis.createClient({
-  host: keys.redisHost,
-  port: keys.redisPort,
-  retry_strategy: () => 1000,
-}).on('error', (err) => {
-  console.error('Error connecting to Redis!', err);
+  url: `redis://${keys.redisHost}:${keys.redisPort}`,
 });
 const redisPublisher = redisClient.duplicate();
  
+redisClient.on('error', (err) => {
+  console.error('Error connecting to Redis!', err);
+});
+
+redisClient.on('connect', () => {
+  console.log('Connected to Redis!');
+});
+
 (async () => {
   try {
     await redisClient.connect();
