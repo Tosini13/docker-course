@@ -51,23 +51,17 @@ app.get("/", (req, res) => {
   try {
     await redisClient.connect();
     await redisPublisher.connect();
-
-    app.get("/values/current", async (req, res) => {
-      console.log('------- /values/current');
-      try {
-        console.log('redisClient.isReady', redisClient.isReady);
-        const values = await redisClient.hGetAll("values");
-        console.log('values', values);
-        res.send(values);
-      } catch (err) {
-        console.error('Error getting values from Redis', err);
-        res.status(500).send({ error: 'Redis error' });
-      }
-    });
   } catch (err) {
     console.error('Error connecting to Redis', err);
   }
 })();
+
+redisPublisher.on('connect', () => {
+  console.log('Connected to Redis Publisher!');
+});
+redisPublisher.on('error', (err) => {
+  console.error('Error connecting to Redis Publisher!', err);
+});
  
  
 app.get("/values/all", async (req, res) => {
@@ -79,7 +73,18 @@ app.get("/values/all", async (req, res) => {
   }
 });
  
- 
+app.get("/values/current", async (req, res) => {
+  console.log('------- /values/current');
+  try {
+    console.log('redisClient.isReady', redisClient.isReady);
+    const values = await redisClient.hGetAll("values");
+    console.log('values', values);
+    res.send(values);
+  } catch (err) {
+    console.error('Error getting values from Redis', err);
+    res.status(500).send({ error: 'Redis error' });
+  }
+});
  
 app.get("/values/current-api", async (req, res) => {
   try {
