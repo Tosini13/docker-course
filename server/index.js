@@ -53,8 +53,11 @@ app.get("/", (req, res) => {
     await redisPublisher.connect();
 
     app.get("/values/current", async (req, res) => {
+      console.log('------- /values/current');
       try {
+        console.log('redisClient.isReady', redisClient.isReady);
         const values = await redisClient.hGetAll("values");
+        console.log('values', values);
         res.send(values);
       } catch (err) {
         console.error('Error getting values from Redis', err);
