@@ -28,9 +28,10 @@ pgClient.on("connect", (client) => {
  
 // Redis Client Setup
 const redis = require("redis");
-
 const redisClient = redis.createClient({
-  url: `redis://${keys.redisHost}:${keys.redisPort}`,
+  host: keys.redisHost,
+  port: keys.redisPort,
+  retry_strategy: () => 1000,
 });
 const redisPublisher = redisClient.duplicate();
  
@@ -48,14 +49,6 @@ app.get("/", (req, res) => {
   res.send(JSON.stringify({response: "Hi from server"}));
 });
 
-(async () => {
-  try {
-    await redisClient.connect();
-    await redisPublisher.connect();
-  } catch (err) {
-    console.error('Error connecting to Redis', err);
-  }
-})();
 
 redisPublisher.on('connect', () => {
   console.log('Connected to Redis Publisher!');
@@ -75,16 +68,9 @@ app.get("/values/all", async (req, res) => {
 });
  
 app.get("/values/current", async (req, res) => {
-  console.log('------- /values/current');
-  try {
-    console.log('redisClient.isReady', redisClient.isReady);
-    const values = await redisClient.hGetAll("values");
-    console.log('values', values);
+  redisClient.hgetall("values", (err, values) => {
     res.send(values);
-  } catch (err) {
-    console.error('Error getting values from Redis', err);
-    res.status(500).send({ error: 'Redis error' });
-  }
+  });
 });
  
 app.get("/values/current-api", async (req, res) => {
@@ -114,18 +100,15 @@ app.post("/values-api", async (req, res) => {
 
 app.post("/values", async (req, res) => {
   const index = req.body.index;
- 
+
   if (parseInt(index) > 40) {
     return res.status(422).send("Index too high");
   }
-  try {
-    await redisClient.hSet("values", index, "Nothing yet!");
-    await redisPublisher.publish("insert", index);
-    pgClient.query("INSERT INTO values(number) VALUES($1)", [index]);
-  } catch (err) {
-    console.error('Error inserting value into Redis or Postgres', err);
-  }
- 
+
+  redisClient.hset("values", index, "Nothing yet!");
+  redisPublisher.publish("insert", index);
+  pgClient.query("INSERT INTO values(number) VALUES($1)", [index]);
+
   res.send({ working: true });
 });
  
