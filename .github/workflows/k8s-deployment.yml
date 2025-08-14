@@ -24,7 +24,6 @@ jobs:
         with:
           project_id: "multi-k8s-469011"
           workload_identity_provider: ${{ vars.WORKLOAD_ID_PROVIDER }}
-          workload_identity_pool: "github"
 
       - name: Set Project
         uses: google-github-actions/setup-gcloud@v0
