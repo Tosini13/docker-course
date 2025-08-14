@@ -30,9 +30,7 @@ jobs:
           workload_identity_provider: ${{ secrets.WORKLOAD_ID_PROVIDER }}
 
       - name: Set Project
-        uses: google-github-actions/setup-gcloud@v0
-        with:
-          project_id: multi-k8s-469011
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Auth
         run: |-
