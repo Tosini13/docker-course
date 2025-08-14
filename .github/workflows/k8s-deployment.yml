@@ -19,15 +19,17 @@ jobs:
           docker build -t tosini13/client-test -f ./client/Dockerfile.dev ./client
           docker run -e CI=true tosini13/client-test npm test
 
-      - name: Set Service Key
-        uses: "google-github-actions/auth@v0"
+      - name: Authenticate to Google Cloud
+        uses: "google-github-actions/auth@v2"
         with:
-          credentials_json: "${{ secrets.GKE_SA_KEY }}"
+          project_id: "multi-k8s-469011"
+          workload_identity_provider: ${{ vars.WORKLOAD_ID_PROVIDER }}
+          workload_identity_pool: "github"
 
       - name: Set Project
         uses: google-github-actions/setup-gcloud@v0
         with:
-          project_id: multi-338920
+          project_id: multi-k8s-469011
 
       - name: Auth
         run: |-
@@ -37,7 +39,7 @@ jobs:
         uses: google-github-actions/get-gke-credentials@v0
         with:
           cluster_name: multi-cluster
-          location: us-central1-c
+          location: europe-southwest1-a
 
       - name: Build
         run: |-
