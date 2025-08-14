@@ -39,7 +39,8 @@ jobs:
       - name: Get Credentials
         uses: google-github-actions/get-gke-credentials@v2
         with:
-          cluster_name: projects/multi-k8s-469011/locations/europe-southwest1-a/clusters/multi-cluster
+          cluster_name: multi-cluster
+          location: europe-southwest1-a
 
       - name: Build
         run: |-
