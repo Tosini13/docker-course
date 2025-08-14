@@ -2,8 +2,8 @@ name: Deploy MultiDocker
 on:
   push:
     branches:
-      - main # check your repo, your default branch might be master!
- 
+      - review # check your repo, your default branch might be master!
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,20 +13,20 @@ jobs:
       - run: docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
       - run: docker build -t tosini13/client -f ./client/Dockerfile.dev ./client
       - run: docker run -e CI=true tosini13/client npm test
- 
+
       - run: docker build -t tosini13/client ./client
       - run: docker build -t tosini13/nginx ./nginx
       - run: docker build -t tosini13/server ./server
       - run: docker build -t tosini13/worker ./worker
- 
+
       - run: docker push tosini13/client
       - run: docker push tosini13/nginx
       - run: docker push tosini13/server
       - run: docker push tosini13/worker
- 
+
       - name: Generate deployment package
         run: zip -r deploy.zip . -x '*.git*'
- 
+
       - name: Deploy to EB
         uses: einaregilsson/beanstalk-deploy@v18
         with:
